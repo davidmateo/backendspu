@@ -67,21 +67,32 @@ router.put("/me", verifyToken, async (req, res) => {
     res.status(500).json({ error: "Error al actualizar perfil" });
   }
 });
-
-/**
- * 🔹 Ruta de prueba (sin token)
- * Para verificar conexión con la DB
- */
-router.get("/prueba", async (req, res) => {
+//register
+router.post("/register", async (req, res) => {
   try {
-    const { rows } = await pool.query(
-      "SELECT * FROM usuario WHERE uid = $1",
-      ["pfmGPYecU0gbq7VQpDuFGKGfs3a2"] // UID inventado
+    const { uid, email, nombre, apellido } = req.body;
+
+    if (!uid || !email || !nombre) {
+      return res.status(400).json({ error: "Faltan datos obligatorios" });
+    }
+
+    // Insertar usuario en Neon (Postgres)
+    const insert = await pool.query(
+      `INSERT INTO usuario (uid, email, nombre, apellido, id_rol) 
+       VALUES ($1, $2, $3, $4, $5) 
+       RETURNING *`,
+      [uid, email, nombre, apellido || null, 3] // 3 = rol estudiante por ejemplo
     );
-    res.json(rows[0] || { message: "No encontrado" });
+
+    const usuario = insert.rows[0];
+
+    res.status(201).json({
+      message: "Usuario registrado correctamente",
+      usuario,
+    });
   } catch (error) {
-    console.error("❌ Error en /prueba:", error);
-    res.status(500).json({ error: "Error en prueba" });
+    console.error("❌ Error en /register:", error);
+    res.status(500).json({ error: error.message });
   }
 });
 
