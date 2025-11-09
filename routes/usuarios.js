@@ -36,6 +36,61 @@ router.post("/login", verifyToken, async (req, res) => {
     res.status(500).json({ error: "Error en login" });
   }
 });
+/**
+ * 🔹 Login del administrador
+ *   Solo permite iniciar sesión a usuarios EXISTENTES con id_rol = 1.
+ *   No crea usuarios nuevos.
+ */
+/**
+ * 🔹 Login del administrador
+ *   Solo permite iniciar sesión a usuarios EXISTENTES con id_rol = 1.
+ *   No crea usuarios nuevos.
+ */
+console.log("🧩 Montando ruta /login-admin");
+router.post("/login-admin", async (req, res) => {
+  const { uid, nombre, email } = req.body;
+
+  if (!uid || !nombre || !email) {
+    return res
+      .status(400)
+      .json({ error: "Faltan campos obligatorios (uid, nombre, email)" });
+  }
+
+  try {
+    // 🔍 Buscar el usuario en la base de datos (usa la tabla correcta)
+    const { rows } = await pool.query(
+      "SELECT * FROM usuario WHERE uid = $1 AND email = $2",
+      [uid, email]
+    );
+
+    // ⚠️ Si no hay usuario o el nombre no coincide exactamente
+    if (rows.length === 0 || rows[0].nombre.trim().toLowerCase() !== nombre.trim().toLowerCase()) {
+      return res.status(404).json({
+        error:
+          "Usuario no encontrado o los datos ingresados no coinciden con ningún administrador.",
+      });
+    }
+
+    const user = rows[0];
+
+    // 🚫 Verificar que el rol sea administrador
+    if (user.id_rol !== 1) {
+      return res.status(403).json({
+        error: "Acceso denegado. Solo los administradores pueden iniciar sesión.",
+      });
+    }
+
+    // ✅ Login correcto
+    res.status(200).json({
+      message: "Login exitoso",
+      usuario: user,
+    });
+  } catch (error) {
+    console.error("❌ Error en /login-admin:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
 
 /**
  * 🔹 Actualizar perfil del usuario

@@ -6,8 +6,7 @@ import pool from "./db.js"; // ✅ Conexión PostgreSQL centralizada
 import firebaseAdmin from "./config/firebase.js"; // ✅ Firebase Admin SDK
 import usuariosRoutes from "./routes/usuarios.js";
 import rolesRoutes from "./routes/roles.js";
-import "./ping.js"; // ✅ Mantiene activa la conexión con Neon
-
+import solicitudesRoutes from "./routes/solicitudes.js";
 dotenv.config();
 
 const app = express();
@@ -40,6 +39,7 @@ app.set("firebaseAdmin", firebaseAdmin);
 // ===============================
 app.use("/usuarios", usuariosRoutes);
 app.use("/roles", rolesRoutes);
+app.use("/solicitudes", solicitudesRoutes);
 
 app.get("/", (req, res) => {
   res.send("🚀 API SoundPodcastUdeC funcionando correctamente...");
