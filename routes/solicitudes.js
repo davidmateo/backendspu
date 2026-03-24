@@ -39,5 +39,23 @@ router.post("/", async (req, res) => {
     res.status(500).json({ error: "Error interno al enviar solicitud" });
   }
 });
+/*
+get all solicitudes cambio de rol
+*/ 
+router.get("/all", async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT s.*, e.nombre AS estado
+       FROM solicitudes_creador s
+       LEFT JOIN estado e ON s.estado_id = e.id
+       ORDER BY s.id DESC`
+    );
+
+    res.status(200).json(rows);
+  } catch (error) {
+    console.error("❌ Error al obtener solicitudes:", error);
+    res.status(500).json({ error: "Error interno al obtener solicitudes" });
+  }
+});
 
 export default router;

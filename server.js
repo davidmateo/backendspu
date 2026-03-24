@@ -14,13 +14,15 @@ const app = express();
 // ===============================
 // 🔹 Configuración de CORS
 // ===============================
+
+ // origin: [
+    //"http://localhost:4200",           // 🔹 Desarrollo local Angular
+    //"https://soundpodcastudec.web.app" // 🔹 Producción en Firebase Hosting
+ // ],
 app.use(cors({
-  origin: [
-    "http://localhost:4200",           // 🔹 Desarrollo local Angular
-    "https://soundpodcastudec.web.app" // 🔹 Producción en Firebase Hosting
-  ],
+  origin: "*",
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  allowedHeaders: ["Content-Type", "Authorization", "x-admin-uid"], // 🔥 AGREGA ESTE
   credentials: true,
 }));
 
@@ -92,7 +94,9 @@ app.post("/api/podcasts", checkAuth, async (req, res) => {
 // ===============================
 // 🔹 Servidor en marcha
 // ===============================
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`✅ Servidor corriendo en http://localhost:${PORT}`);
+const PORT = process.env.PORT || 3001;
+const HOST = "0.0.0.0";
+
+app.listen(PORT, HOST, () => {
+  console.log(`✅ Servidor corriendo en http://0.0.0.0:${PORT}`);
 });
