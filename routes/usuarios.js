@@ -47,6 +47,8 @@ router.post("/login", verifyToken, async (req, res) => {
  *   No crea usuarios nuevos.
  */
 console.log("🧩 Montando ruta /login-admin");
+console.log("🧩 Montando ruta /login-admin");
+
 router.post("/login-admin", async (req, res) => {
   const { uid, nombre, email } = req.body;
 
@@ -57,26 +59,41 @@ router.post("/login-admin", async (req, res) => {
   }
 
   try {
-    // 🔍 Buscar el usuario en la base de datos (usa la tabla correcta)
+    // 🔍 Buscar el usuario en la base de datos
     const { rows } = await pool.query(
       "SELECT * FROM usuario WHERE uid = $1 AND email = $2",
       [uid, email]
     );
 
-    // ⚠️ Si no hay usuario o el nombre no coincide exactamente
-    if (rows.length === 0 || rows[0].nombre.trim().toLowerCase() !== nombre.trim().toLowerCase()) {
+    if (rows.length === 0) {
       return res.status(404).json({
-        error:
-          "Usuario no encontrado o los datos ingresados no coinciden con ningún administrador.",
+        error: "Usuario no encontrado en la base de datos.",
       });
     }
 
     const user = rows[0];
 
+    // ⚠️ Normalizar nombres para evitar errores de mayúsculas/minúsculas
+    const nombreBD = user.nombre.trim().toLowerCase();
+    const nombreReq = nombre.trim().toLowerCase();
+
+    if (nombreBD !== nombreReq) {
+      return res.status(403).json({
+        error: "El nombre ingresado no coincide con el registrado.",
+      });
+    }
+
     // 🚫 Verificar que el rol sea administrador
     if (user.id_rol !== 1) {
+      // En lugar de bloquear completamente, podemos retornar info mínima para debug
       return res.status(403).json({
         error: "Acceso denegado. Solo los administradores pueden iniciar sesión.",
+        usuario: {
+          uid: user.uid,
+          email: user.email,
+          id_rol: user.id_rol,
+          nombre: user.nombre,
+        },
       });
     }
 
@@ -85,6 +102,7 @@ router.post("/login-admin", async (req, res) => {
       message: "Login exitoso",
       usuario: user,
     });
+
   } catch (error) {
     console.error("❌ Error en /login-admin:", error);
     res.status(500).json({ error: "Error interno del servidor" });
@@ -177,15 +195,22 @@ router.post("/register", async (req, res) => {
       return res.status(400).json({ error: "Faltan datos obligatorios" });
     }
 
-    // Insertar usuario en Neon (Postgres)
+    // 1️⃣ Insertar usuario en Neon (Postgres)
     const insert = await pool.query(
       `INSERT INTO usuario (uid, email, nombre, apellido, id_rol) 
        VALUES ($1, $2, $3, $4, $5) 
        RETURNING *`,
-      [uid, email, nombre, apellido || null, 3] // 3 = rol estudiante por ejemplo
+      [uid, email, nombre, apellido || null, 3] // 3 = rol estudiante
     );
 
     const usuario = insert.rows[0];
+
+    // 2️⃣ 🔔 Insertar actividad para notificaciones
+    await pool.query(
+      `INSERT INTO actividad_usuario (usuario_id, tipo_accion)
+       VALUES ($1, $2)`,
+      [uid, 'Se registró en la plataforma']
+    );
 
     res.status(201).json({
       message: "Usuario registrado correctamente",

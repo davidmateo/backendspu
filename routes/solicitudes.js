@@ -23,17 +23,24 @@ router.post("/", async (req, res) => {
     }
 
     // Crear solicitud
-    const { rows } = await pool.query(
-      `INSERT INTO solicitudes_creador (uid_firebase, nombre, correo, nuevo_uid, estado_id)
-       VALUES ($1, $2, $3, $4, 1)
-       RETURNING *`,
-      [uid_firebase, nombre, correo, nuevo_uid]
-    );
+const { rows } = await pool.query(
+  `INSERT INTO solicitudes_creador (uid_firebase, nombre, correo, nuevo_uid, estado_id)
+   VALUES ($1, $2, $3, $4, 1)
+   RETURNING *`,
+  [uid_firebase, nombre, correo, nuevo_uid]
+);
 
-    res.status(201).json({
-      mensaje: "Solicitud enviada correctamente.",
-      solicitud: rows[0]
-    });
+// 🔔 Insertar actividad para notificaciones
+await pool.query(
+  `INSERT INTO actividad_usuario (usuario_id, tipo_accion)
+   VALUES ($1, $2)`,
+  [uid_firebase, `Solicitó cambio de rol`]
+);
+
+res.status(201).json({
+  mensaje: "Solicitud enviada correctamente.",
+  solicitud: rows[0]
+});
   } catch (error) {
     console.error("❌ Error en solicitud:", error);
     res.status(500).json({ error: "Error interno al enviar solicitud" });
@@ -57,5 +64,69 @@ router.get("/all", async (req, res) => {
     res.status(500).json({ error: "Error interno al obtener solicitudes" });
   }
 });
+router.put("/:id", async (req, res) => {
+  try {
+    const { estado_id } = req.body;
+    const solicitudId = req.params.id;
+
+    if (!estado_id) {
+      return res.status(400).json({ error: "Falta estado_id" });
+    }
+
+    // 🔍 Buscar solicitud
+    const { rows } = await pool.query(
+      "SELECT * FROM solicitudes_creador WHERE id = $1",
+      [solicitudId]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Solicitud no encontrada" });
+    }
+
+    const solicitud = rows[0];
+
+    // 🟢 APROBAR
+    if (estado_id == 2) {
+
+      // cambiar rol a creador
+      await pool.query(
+        "UPDATE usuario SET id_rol = 4 WHERE uid = $1",
+        [solicitud.uid_firebase]
+      );
+
+      // eliminar solicitud
+      await pool.query(
+        "DELETE FROM solicitudes_creador WHERE id = $1",
+        [solicitudId]
+      );
+
+      return res.json({ message: "Usuario promovido a creador" });
+    }
+
+    // 🔴 DENEGAR
+    if (estado_id == 3) {
+
+      await pool.query(
+        "DELETE FROM solicitudes_creador WHERE id = $1",
+        [solicitudId]
+      );
+
+      return res.json({ message: "Solicitud denegada" });
+    }
+
+    // 🟡 (opcional) actualizar estado
+    await pool.query(
+      "UPDATE solicitudes_creador SET estado_id = $1 WHERE id = $2",
+      [estado_id, solicitudId]
+    );
+
+    res.json({ message: "Estado actualizado" });
+
+  } catch (error) {
+    console.error("❌ Error actualizando solicitud:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 
 export default router;

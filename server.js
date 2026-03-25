@@ -7,6 +7,7 @@ import firebaseAdmin from "./config/firebase.js"; // ✅ Firebase Admin SDK
 import usuariosRoutes from "./routes/usuarios.js";
 import rolesRoutes from "./routes/roles.js";
 import solicitudesRoutes from "./routes/solicitudes.js";
+import podcastRoutes from "./routes/podcast.js";
 dotenv.config();
 
 const app = express();
@@ -42,6 +43,7 @@ app.set("firebaseAdmin", firebaseAdmin);
 app.use("/usuarios", usuariosRoutes);
 app.use("/roles", rolesRoutes);
 app.use("/solicitudes", solicitudesRoutes);
+app.use("/podcast", podcastRoutes);
 
 app.get("/", (req, res) => {
   res.send("🚀 API SoundPodcastUdeC funcionando correctamente...");
@@ -90,7 +92,29 @@ app.post("/api/podcasts", checkAuth, async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+app.get('/api/notificaciones', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM vista_actividad ORDER BY fecha_hora DESC');
+    res.json(result.rows);
+  } catch (err) {
+    console.error("❌ Error al obtener notificaciones:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+app.delete("/api/notificaciones/marcar-leidas", async (req, res) => {
+  try {
+    // 🔹 Actualizar las solicitudes pendientes a "visto" o leído
+    // Asegúrate de tener una columna tipo 'leido' o 'visto' en la tabla base
+    const result = await pool.query(
+      "DELETE FROM actividad_usuario WHERE leida = false"
+    );
 
+    res.json({ message: "Todas las notificaciones han sido marcadas como leídas" });
+  } catch (error) {
+    console.error("❌ Error marcando notificaciones como leídas:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
 // ===============================
 // 🔹 Servidor en marcha
 // ===============================
