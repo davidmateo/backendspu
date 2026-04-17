@@ -8,6 +8,9 @@ import usuariosRoutes from "./routes/usuarios.js";
 import rolesRoutes from "./routes/roles.js";
 import solicitudesRoutes from "./routes/solicitudes.js";
 import podcastRoutes from "./routes/podcast.js";
+import multer from 'multer';
+
+const upload = multer({ storage: multer.memoryStorage() });
 dotenv.config();
 
 const app = express();
@@ -116,6 +119,170 @@ app.delete("/api/notificaciones/marcar-leidas", async (req, res) => {
   }
 });
 // ===============================
+// ===============================
+// 🔹 BACKUP COMPLETO
+// ===============================
+
+app.get('/api/backup', async (req, res) => {
+  try {
+
+    let sql = '';
+
+    // ===============================
+    // 🔹 INICIO TRANSACCIÓN
+    // ===============================
+    sql += `
+BEGIN;
+
+-- 🔹 Limpiar datos (SIN borrar estructura)
+TRUNCATE TABLE 
+actividad_usuario,
+comentario,
+like_podcast,
+solicitudes_creador,
+podcast,
+usuario,
+estado,
+rol
+RESTART IDENTITY CASCADE;
+
+`;
+
+    // ===============================
+    // 🔹 ORDEN CORRECTO (RELACIONES)
+    // ===============================
+    const tables = [
+      'rol',
+      'estado',
+      'usuario',
+      'podcast',
+      'solicitudes_creador',
+      'like_podcast',
+      'comentario',
+      'actividad_usuario'
+    ];
+
+    sql += '\n-- =============================\n-- 🔹 DATOS\n-- =============================\n';
+
+    for (let table of tables) {
+
+      const { rows } = await pool.query(`SELECT * FROM ${table}`);
+
+      if (rows.length === 0) continue;
+
+      sql += `\n-- Tabla: ${table}\n`;
+
+      for (let row of rows) {
+
+        const columns = Object.keys(row).join(', ');
+
+        const values = Object.values(row).map(val => {
+
+          if (val === null) return 'NULL';
+
+          if (typeof val === 'number') return val;
+
+          if (typeof val === 'boolean') return val ? 'TRUE' : 'FALSE';
+
+          // 🔥 FORMATO CORRECTO PARA FECHAS (POSTGRESQL)
+          if (val instanceof Date) {
+            return `'${val.toISOString().replace('T', ' ').replace('Z', '')}'`;
+          }
+
+          // 🔥 ESCAPAR STRINGS
+          return `'${String(val).replace(/'/g, "''")}'`;
+
+        }).join(', ');
+
+        sql += `INSERT INTO ${table} (${columns}) VALUES (${values});\n`;
+      }
+    }
+
+    // ===============================
+    // 🔹 FINAL TRANSACCIÓN
+    // ===============================
+    sql += `
+COMMIT;
+`;
+
+    // ===============================
+    // 🔹 DESCARGA
+    // ===============================
+    res.setHeader('Content-Type', 'application/sql');
+    res.setHeader('Content-Disposition', 'attachment; filename=backup_datos.sql');
+
+    res.send(sql);
+
+  } catch (error) {
+    console.error('❌ Error backup:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+// ===============================
+// ===============================
+// 🔹 RESTAURAR BACKUP
+// ===============================
+app.post('/api/restore', upload.single('file'), async (req, res) => {
+  const client = await pool.connect();
+
+  try {
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'No se envió archivo' });
+    }
+
+    let sql = req.file.buffer.toString('utf-8');
+
+    // ===============================
+    // 🔒 LIMPIEZA AUTOMÁTICA SQL
+    // ===============================
+
+    // ❌ eliminar cosas que rompen Neon
+    sql = sql.replace(/SET session_replication_role.*?;/gi, '');
+
+    // ===============================
+    // 🔒 VALIDACIONES
+    // ===============================
+
+    if (!sql.includes('INSERT INTO')) {
+      return res.status(400).json({ error: 'Backup inválido' });
+    }
+
+    // ===============================
+    // 🔥 EJECUCIÓN SEGURA
+    // ===============================
+
+    await client.query('BEGIN');
+
+    try {
+      await client.query(sql);
+      await client.query('COMMIT');
+
+      res.json({ message: '✅ Restore funcionando perfecto' });
+
+    } catch (err) {
+
+      await client.query('ROLLBACK');
+
+      console.error("🔥 ERROR REAL:");
+      console.error(err);
+
+      res.status(500).json({
+        error: err.message,
+        detail: err.detail
+      });
+    }
+
+  } catch (error) {
+
+    console.error('❌ Error restore:', error);
+
+    res.status(500).json({ error: error.message });
+
+  } finally {
+    client.release();
+  }
+});
 // 🔹 Servidor en marcha
 // ===============================
 const PORT = process.env.PORT || 3001;

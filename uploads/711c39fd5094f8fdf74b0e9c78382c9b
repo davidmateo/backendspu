@@ -1,0 +1,148 @@
+
+-- =============================
+-- 🔹 ESTRUCTURA
+-- =============================
+
+DROP TABLE IF EXISTS actividad_usuario CASCADE;
+DROP TABLE IF EXISTS comentario CASCADE;
+DROP TABLE IF EXISTS like_podcast CASCADE;
+DROP TABLE IF EXISTS solicitudes_creador CASCADE;
+DROP TABLE IF EXISTS podcast CASCADE;
+DROP TABLE IF EXISTS usuario CASCADE;
+DROP TABLE IF EXISTS estado CASCADE;
+DROP TABLE IF EXISTS rol CASCADE;
+
+-- 🔹 Tabla rol
+CREATE TABLE rol (
+  id_rol SERIAL PRIMARY KEY,
+  nombre_rol VARCHAR(50)
+);
+
+-- 🔹 Tabla estado
+CREATE TABLE estado (
+  id SERIAL PRIMARY KEY,
+  nombre VARCHAR(50)
+);
+
+-- 🔹 Tabla usuario
+CREATE TABLE usuario (
+  uid VARCHAR PRIMARY KEY,
+  nombre VARCHAR,
+  email VARCHAR,
+  fecha_registro TIMESTAMP,
+  refresh_token TEXT,
+  id_rol INTEGER,
+  apellido VARCHAR,
+  fecha_actualizacion TIMESTAMP,
+  fecha_creacion TIMESTAMP,
+  FOREIGN KEY (id_rol) REFERENCES rol(id_rol)
+);
+
+-- 🔹 Tabla podcast
+CREATE TABLE podcast (
+  id_podcast SERIAL PRIMARY KEY,
+  titulo VARCHAR,
+  description TEXT,
+  url_audio TEXT,
+  fecha_subida TIMESTAMP,
+  uid VARCHAR,
+  imagen TEXT,
+  estado_id INTEGER,
+  FOREIGN KEY (uid) REFERENCES usuario(uid),
+  FOREIGN KEY (estado_id) REFERENCES estado(id)
+);
+
+-- 🔹 Tabla solicitudes
+CREATE TABLE solicitudes_creador (
+  id SERIAL PRIMARY KEY,
+  uid_firebase VARCHAR,
+  nombre VARCHAR,
+  correo VARCHAR,
+  nuevo_uid VARCHAR,
+  estado_id INTEGER,
+  fecha_solicitud TIMESTAMP,
+  FOREIGN KEY (uid_firebase) REFERENCES usuario(uid),
+  FOREIGN KEY (estado_id) REFERENCES estado(id)
+);
+
+-- 🔹 Tabla likes
+CREATE TABLE like_podcast (
+  id_like SERIAL PRIMARY KEY,
+  fecha_like TIMESTAMP,
+  uid VARCHAR,
+  id_podcast INTEGER,
+  FOREIGN KEY (uid) REFERENCES usuario(uid),
+  FOREIGN KEY (id_podcast) REFERENCES podcast(id_podcast)
+);
+
+-- 🔹 Tabla comentario
+CREATE TABLE comentario (
+  id_comentario SERIAL PRIMARY KEY,
+  contenido TEXT,
+  fecha_comentario TIMESTAMP,
+  uid VARCHAR,
+  id_podcast INTEGER,
+  FOREIGN KEY (uid) REFERENCES usuario(uid),
+  FOREIGN KEY (id_podcast) REFERENCES podcast(id_podcast)
+);
+
+-- 🔹 Tabla actividad
+CREATE TABLE actividad_usuario (
+  id SERIAL PRIMARY KEY,
+  usuario VARCHAR,
+  tipo_accion TEXT,
+  fecha_hora TIMESTAMP,
+  leida BOOLEAN DEFAULT FALSE
+);
+
+-- =============================
+-- 🔹 DATOS
+-- =============================
+
+-- Tabla: rol
+INSERT INTO rol (id_rol, nombre_rol) VALUES (1, 'Administrador');
+INSERT INTO rol (id_rol, nombre_rol) VALUES (2, 'Profesor');
+INSERT INTO rol (id_rol, nombre_rol) VALUES (3, 'Estudiante');
+INSERT INTO rol (id_rol, nombre_rol) VALUES (4, 'creador');
+
+-- Tabla: estado
+INSERT INTO estado (id, nombre) VALUES (1, 'pendiente');
+INSERT INTO estado (id, nombre) VALUES (2, 'aprobada');
+INSERT INTO estado (id, nombre) VALUES (3, 'rechazada');
+
+-- Tabla: usuario
+INSERT INTO usuario (uid, nombre, email, fecha_registro, refresh_token, id_rol, apellido, fecha_actualizacion, fecha_creacion) VALUES ('0787', 'david', 'david@gmail.com', '2025-10-22T04:53:51.934Z', NULL, 1, 'sanchez', '2026-03-24T04:11:16.999Z', '2026-03-24T04:11:42.256Z');
+INSERT INTO usuario (uid, nombre, email, fecha_registro, refresh_token, id_rol, apellido, fecha_actualizacion, fecha_creacion) VALUES ('A8DQxUWmHrcdOzOeSRDDAyO4SeI2', 'brayan esteban', 'brayansneidervaquero@gmail.com', '2025-11-12T22:05:01.691Z', NULL, 3, 'mora correa', '2026-03-24T04:11:16.999Z', '2026-03-24T04:11:42.256Z');
+INSERT INTO usuario (uid, nombre, email, fecha_registro, refresh_token, id_rol, apellido, fecha_actualizacion, fecha_creacion) VALUES ('Ir8f8eIrOhehmDCNX1r6o0kwI0c2', 'brayan esteban', 'besteban@gmail.com', '2025-11-12T22:11:37.108Z', NULL, 3, 'mora correa', '2026-03-24T04:11:16.999Z', '2026-03-24T04:11:42.256Z');
+INSERT INTO usuario (uid, nombre, email, fecha_registro, refresh_token, id_rol, apellido, fecha_actualizacion, fecha_creacion) VALUES ('dmsl', 'david', 'd@gmail.com', '2025-11-16T09:54:16.830Z', NULL, 4, NULL, '2026-03-24T04:11:16.999Z', '2026-03-24T04:11:42.256Z');
+INSERT INTO usuario (uid, nombre, email, fecha_registro, refresh_token, id_rol, apellido, fecha_actualizacion, fecha_creacion) VALUES ('GEZiGlC2MIMoALsNM6Fam4eYnst1', 'Jorge', 'jorge@gmail.com', '2025-11-18T20:35:29.013Z', NULL, 3, 'Rodriguez', '2026-03-24T04:11:16.999Z', '2026-03-24T04:11:42.256Z');
+INSERT INTO usuario (uid, nombre, email, fecha_registro, refresh_token, id_rol, apellido, fecha_actualizacion, fecha_creacion) VALUES ('mFcEXtuoHbc9UcnJZjQZ1bwsKnu2', 'Maicol', 'ttmaicol1310@gmail.com', '2026-03-14T03:00:22.159Z', NULL, 3, 'Torres', '2026-03-24T04:11:16.999Z', '2026-03-24T04:11:42.256Z');
+INSERT INTO usuario (uid, nombre, email, fecha_registro, refresh_token, id_rol, apellido, fecha_actualizacion, fecha_creacion) VALUES ('3f4De0teyEhtMllBFbUH0Hxy9xx1', 'david', 'sanchezdavidmateo03@gmail.com', '2025-10-04T22:20:20.677Z', NULL, 3, 'Sanchez', '2026-03-24T04:12:04.600Z', '2026-03-24T04:11:42.256Z');
+INSERT INTO usuario (uid, nombre, email, fecha_registro, refresh_token, id_rol, apellido, fecha_actualizacion, fecha_creacion) VALUES ('sadasda', 'ddsadas', 'sanchez@gmail.com', '2026-03-24T04:34:41.825Z', NULL, 3, 'fabi', '2026-03-24T04:34:41.825Z', '2026-03-24T04:34:41.825Z');
+INSERT INTO usuario (uid, nombre, email, fecha_registro, refresh_token, id_rol, apellido, fecha_actualizacion, fecha_creacion) VALUES ('dsadas', 'sanchez', 'dmateo@gmail.com', '2026-03-24T04:53:26.904Z', NULL, 3, 'leon', '2026-03-24T04:53:26.904Z', '2026-03-24T04:53:26.904Z');
+INSERT INTO usuario (uid, nombre, email, fecha_registro, refresh_token, id_rol, apellido, fecha_actualizacion, fecha_creacion) VALUES ('TvAtdb8DEPXHvtKo4JMWQEilbuf1', 'das', 'mauriciovasquez220@gmail.com', '2025-10-09T01:50:41.173Z', NULL, 4, 'aa', '2026-03-24T04:11:16.999Z', '2026-03-24T04:11:42.256Z');
+INSERT INTO usuario (uid, nombre, email, fecha_registro, refresh_token, id_rol, apellido, fecha_actualizacion, fecha_creacion) VALUES ('1p3XKsaeXjNB58EHoGQGnSOG4Y62', 'Sara', 'sara@gmail.com', '2026-03-25T01:38:03.505Z', NULL, 3, 'Sanchez', '2026-03-25T01:38:03.505Z', '2026-03-25T01:38:03.505Z');
+INSERT INTO usuario (uid, nombre, email, fecha_registro, refresh_token, id_rol, apellido, fecha_actualizacion, fecha_creacion) VALUES ('rla433dbC3RTh5dfRtgWPomDF1g1', 'david', 'dmsl@gmail.com', '2026-03-25T22:21:42.888Z', NULL, 3, 'sanchez', '2026-03-25T22:21:42.888Z', '2026-03-25T22:21:42.888Z');
+INSERT INTO usuario (uid, nombre, email, fecha_registro, refresh_token, id_rol, apellido, fecha_actualizacion, fecha_creacion) VALUES ('9pzjDfkaxJUdSxxlHUl1ogeTRwp1', 'alonso', 'aloson@gmail.com', '2026-03-25T22:52:37.720Z', NULL, 3, 'sanchez', '2026-03-25T22:52:37.720Z', '2026-03-25T22:52:37.720Z');
+INSERT INTO usuario (uid, nombre, email, fecha_registro, refresh_token, id_rol, apellido, fecha_actualizacion, fecha_creacion) VALUES ('LLYp0tT8Z0a3PGuvKxUfuUZrSIk1', NULL, 'juan@gmail.com', '2026-03-25T23:22:16.800Z', NULL, 3, NULL, '2026-03-25T23:22:16.800Z', '2026-03-25T23:22:16.800Z');
+INSERT INTO usuario (uid, nombre, email, fecha_registro, refresh_token, id_rol, apellido, fecha_actualizacion, fecha_creacion) VALUES ('A2bR0N6W8UOLGx3BWmXVyRkRSCm2', NULL, 'ds@gmail.com', '2026-03-26T02:52:27.752Z', NULL, 3, NULL, '2026-03-26T02:52:27.752Z', '2026-03-26T02:52:27.752Z');
+
+-- Tabla: podcast
+INSERT INTO podcast (id_podcast, titulo, description, url_audio, fecha_subida, uid, imagen, estado_id) VALUES (1, 'asdas', 'asdas', 'sdsadsa', '2026-03-25T03:29:42.573Z', 'dmsl', 'ddsdfas', 1);
+INSERT INTO podcast (id_podcast, titulo, description, url_audio, fecha_subida, uid, imagen, estado_id) VALUES (3, 'nivo x ', 'sdasdas', 'asdasdas', '2026-03-25T06:42:21.803Z', 'dmsl', 'sadass', 1);
+
+-- Tabla: solicitudes_creador
+INSERT INTO solicitudes_creador (id, uid_firebase, nombre, correo, nuevo_uid, estado_id, fecha_solicitud) VALUES (3, 'GEZiGlC2MIMoALsNM6Fam4eYnst1', 'Jorgito', 'jorge@gmail.com', 'Jorge23', 1, '2025-11-19T07:41:00.626Z');
+INSERT INTO solicitudes_creador (id, uid_firebase, nombre, correo, nuevo_uid, estado_id, fecha_solicitud) VALUES (7, '1p3XKsaeXjNB58EHoGQGnSOG4Y62', 'Sara', 'sara@gmail.com', 'sara05', 1, '2026-03-25T03:53:04.555Z');
+INSERT INTO solicitudes_creador (id, uid_firebase, nombre, correo, nuevo_uid, estado_id, fecha_solicitud) VALUES (12, 'rla433dbC3RTh5dfRtgWPomDF1g1', 'david', 'dmsl@gmail.com', '40787', 1, '2026-03-25T22:46:55.655Z');
+
+-- =============================
+-- 🔹 RESETEO DE SECUENCIAS
+-- =============================
+SELECT setval('rol_id_rol_seq', COALESCE((SELECT MAX(id_rol) FROM rol), 1));
+SELECT setval('estado_id_seq', COALESCE((SELECT MAX(id) FROM estado), 1));
+SELECT setval('podcast_id_podcast_seq', COALESCE((SELECT MAX(id_podcast) FROM podcast), 1));
+SELECT setval('solicitudes_creador_id_seq', COALESCE((SELECT MAX(id) FROM solicitudes_creador), 1));
+SELECT setval('like_podcast_id_like_seq', COALESCE((SELECT MAX(id_like) FROM like_podcast), 1));
+SELECT setval('comentario_id_comentario_seq', COALESCE((SELECT MAX(id_comentario) FROM comentario), 1));
+SELECT setval('actividad_usuario_id_seq', COALESCE((SELECT MAX(id) FROM actividad_usuario), 1));
